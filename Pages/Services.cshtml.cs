@@ -1,12 +1,17 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
+using RazorPagesApp.Services;
 
 namespace RazorPagesApp.Pages
 {
-    public class ServicesModel : PageModel
+    public class ServicesModel : DefaultModel
     {
+        public ServicesModel(IDataReader reader) : base(reader, "services")
+        {
+        }
+
         public void OnGet()
         {
+            title = _dataReader.GetData(_pageName)["title"];
+            activeState = new string[] { "", "", "active", "", "", "", "", "" };
         }
     }
 }

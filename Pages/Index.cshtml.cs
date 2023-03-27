@@ -1,18 +1,17 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using RazorPagesApp.Services;
 
 namespace RazorPagesApp.Pages
 {
-    public class IndexModel : PageModel
+    public class IndexModel : DefaultModel
     {
+        public IndexModel(IDataReader reader) : base(reader, "index")
+        {
+        }
 
         public void OnGet()
         {
+            title = _dataReader.GetData(_pageName)["title"];
+            activeState = new string[] { "active", "", "", "", "", "", "", "" };
         }
     }
 }
