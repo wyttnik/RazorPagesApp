@@ -22,6 +22,7 @@ namespace RazorPagesApp
                 app.UseHttpLogging();
             }
 
+            app.UseHttpsRedirection();
             app.UseStaticFiles();
 
             app.UseRouting();
