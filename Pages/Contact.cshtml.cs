@@ -1,5 +1,8 @@
+using CsvHelper;
+using CsvHelper.Configuration;
 using Microsoft.AspNetCore.Mvc;
 using RazorPagesApp.Services;
+using System.Globalization;
 using System.Net;
 using System.Numerics;
 using System.Reflection.PortableExecutable;
@@ -32,35 +35,32 @@ namespace RazorPagesApp.Pages
             var request = Request.Form;
             var result = new ContentResult();
 
-//$first_name = $_POST['first_name'];
-//$last_name = $_POST['last_name'];
-//$email = $_POST['email'];
-//$phone = $_POST['phone'];
-//$select_price = $_POST['select_price'];
-//$select_service = $_POST['select_service'];
-//$subject = $_POST['subject'];
-//$comments = $_POST['comments'];
-//$verify = $_POST['verify'];
-
             if (request["first_name"] == "")
             {
                 result.Content = "<div class=\"error_message\">Attention! You must enter your name</div>";
                 result.ContentType = "text/html";
-                result.StatusCode = 406;
+                result.StatusCode = 200;
+                return result;
+            }
+            else if (request["last_name"] == "")
+            {
+                result.Content = "<div class=\"error_message\">Attention! You must enter your surname</div>";
+                result.ContentType = "text/html";
+                result.StatusCode = 200;
                 return result;
             }
             else if (request["email"] == "")
             {
-                result.Content = "<div class=\"error_message\">Attention! Please enter a valid email address.</div>";
+                result.Content = "<div class=\"error_message\">Attention! Please enter an email address.</div>";
                 result.ContentType = "text/html";
-                result.StatusCode = 400;
+                result.StatusCode = 200;
                 return result;
             }
             else if (!isEmail(request["email"]))
             {
-                result.Content = "<div class=\"error_message\">Attention! You have enter an invalid e-mail address, try again.</div>";
+                result.Content = "<div class=\"error_message\">Attention! You have entered an invalid e-mail address, try again.</div>";
                 result.ContentType = "text/html";
-                result.StatusCode = 400;
+                result.StatusCode = 200;
                 return result;
             }
 
@@ -68,63 +68,73 @@ namespace RazorPagesApp.Pages
             {
                 result.Content = "<div class=\"error_message\">Attention! Please enter your message.</div>";
                 result.ContentType = "text/html";
-                result.StatusCode = 400;
+                result.StatusCode = 200;
                 return result;
+            }
+
+            var records = new List<FormContact> { 
+                new FormContact
+                {
+                    name = request["first_name"],
+                    surname = request["last_name"],
+                    email = request["email"],
+                    phone = request["phone"],
+                    select_service = request["select_service"],
+                    select_price = request["select_price"],
+                    comments = request["comments"]
+                } 
+            };
+
+            CsvConfiguration config;
+            if (System.IO.File.Exists("contacts.csv"))
+            {
+                config = new CsvConfiguration(CultureInfo.InvariantCulture)
+                {
+                    HasHeaderRecord = false,
+                };
+            }
+            else
+            {
+                config = new CsvConfiguration(CultureInfo.InvariantCulture)
+                {
+                    HasHeaderRecord = true,
+                };
+            }
+
+            using (var writer = new StreamWriter("contacts.csv", true))
+            using (var csv = new CsvWriter(writer, config))
+            {
+                csv.Context.RegisterClassMap<ContactMap>();
+                csv.WriteRecords(records);
             }
 
             result.StatusCode = 200;
             return result;
-            //// Configuration option.
-            //// Enter the email address that you want to emails to be sent to.
-            //// Example $address = "joe.doe@yourdomain.com";
+        }
+    }
 
-            ////$address = "example@themeforest.net";
-            //$address = "example@yourdomain.com";
+    public class FormContact
+    {
+        public string name { get; set; }
+        public string surname { get; set; }
+        public string email { get; set; }
+        public string phone { get; set; }
+        public string select_service { get; set; }
+        public string select_price { get; set; }
+        public string comments { get; set; }
+    }
 
-
-            //// Configuration option.
-            //// i.e. The standard subject will appear as, "You've been contacted by John Doe."
-
-            //// Example, $e_subject = '$name . ' has contacted you via Your Website.';
-
-            //$e_subject = 'You\'ve been contacted by '. $first_name. '.';
-
-
-            //// Configuration option.
-            //// You can change this if you feel that you need to.
-            //// Developers, you may wish to add more fields to the form, in which case you must be sure to add them here.
-
-            //$e_body = "You have been contacted by $first_name. $first_name selected service of $select_service, their additional message is as follows. Customer max budge is $select_price, for this project.".PHP_EOL.PHP_EOL;
-            //$e_content = "\"$comments\"".PHP_EOL.PHP_EOL;
-            //$e_reply = "You can contact $first_name via email, $email or via phone $phone";
-
-            //$msg = wordwrap( $e_body. $e_content. $e_reply, 70);
-
-            //$headers = "From: $email".PHP_EOL;
-            //$headers.= "Reply-To: $email".PHP_EOL;
-            //$headers.= "MIME-Version: 1.0".PHP_EOL;
-            //$headers.= "Content-type: text/plain; charset=utf-8".PHP_EOL;
-            //$headers.= "Content-Transfer-Encoding: quoted-printable".PHP_EOL;
-
-            //            if (mail($address, $e_subject, $msg, $headers))
-            //            {
-
-            //                // Email has sent successfully, echo a success page.
-
-            //                echo "<fieldset>";
-            //                echo "<div id='success_page'>";
-            //                echo "<h1>Email Sent Successfully.</h1>";
-            //                echo "<p>Thank you <strong>$first_name</strong>, your message has been submitted to us.</p>";
-            //                echo "</div>";
-            //                echo "</fieldset>";
-
-            //            }
-            //            else
-            //            {
-
-            //                echo 'ERROR!';
-
-            //            }
+    public class ContactMap : ClassMap<FormContact>
+    {
+        public ContactMap()
+        {
+            Map(m => m.name).Index(0).Name("First Name");
+            Map(m => m.surname).Index(1).Name("Last Name");
+            Map(m => m.email).Index(2).Name("Email");
+            Map(m => m.phone).Index(3).Name("Phone Number");
+            Map(m => m.select_service).Index(4).Name("Service");
+            Map(m => m.select_price).Index(5).Name("Price");
+            Map(m => m.comments).Index(6).Name("Comments");
         }
     }
 }
