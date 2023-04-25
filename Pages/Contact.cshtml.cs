@@ -1,6 +1,8 @@
 using CsvHelper;
 using CsvHelper.Configuration;
 using Microsoft.AspNetCore.Mvc;
+using RazorPagesApp.Data;
+using RazorPagesApp.Models;
 using RazorPagesApp.Services;
 using System.Globalization;
 using System.Net;
@@ -14,8 +16,10 @@ namespace RazorPagesApp.Pages
     [IgnoreAntiforgeryToken]
     public class ContactModel : DefaultModel
     {
-        public ContactModel(IDataReader reader) : base(reader, "contacts")
+        private readonly GoodWebContext _context;
+        public ContactModel(IDataReader reader, GoodWebContext context) : base(reader, "contacts")
         {
+            _context = context;
         }
         
         public void OnGet()
@@ -30,7 +34,10 @@ namespace RazorPagesApp.Pages
                     RegexOptions.CultureInvariant | RegexOptions.Singleline);
         }
 
-        public IActionResult OnPost()
+        [BindProperty]
+        public Contact Contact { get; set; }
+
+        public async Task<IActionResult> OnPostAsync()
         {
             var request = Request.Form;
             var result = new ContentResult();
@@ -108,7 +115,21 @@ namespace RazorPagesApp.Pages
                 csv.WriteRecords(records);
             }
 
+            Random rnd = new Random();
+
+            var icon = testimonials.AsArray()[rnd.Next(3)];
+
             result.StatusCode = 200;
+            _context.Contacts.Add(Contact);
+            await _context.SaveChangesAsync();
+
+            _context.Testimonials.Add(new Testimonial { Name = Contact.First_name + ' ' + Contact.Last_name,
+                                                        ImgURL = icon["author-img"].ToString(), 
+                                                        Title = icon["author-title"].ToString(), 
+                                                        Ocupation = icon["desc-title"].ToString(),
+                                                        Description = Contact.Comments});
+            await _context.SaveChangesAsync();
+
             return result;
         }
     }
